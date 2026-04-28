@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --surface-color: rgba(22, 22, 22, 0.94);
+            --primary: #ffffff;
+            --primary-glow: rgba(245, 238, 226, 0.32);
+            --text-main: #ffffff;
+            --text-muted: #bebebe;
+            --ok: #f5eee2;
+            --warn: #d9d0c0;
+            --accent: #f5eee2;
+            --accent-soft: rgba(245, 238, 226, 0.2);
+        }
+        [data-theme="night"] {
+            --surface-color: rgba(16, 16, 16, 0.95);
+            --primary-glow: rgba(255, 255, 255, 0.24);
+            --text-muted: #a9a9a9;
+            --ok: #ffffff;
+            --warn: #cfcfcf;
+            --accent: #ffffff;
+            --accent-soft: rgba(255, 255, 255, 0.16);
+            --bg-color: #040404;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top, #2a2a2a, var(--bg-color));
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 24px 16px 50px;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(500px 250px at 15% 0%, rgba(255, 255, 255, 0.06), transparent 60%),
+                radial-gradient(420px 240px at 90% 15%, rgba(245, 238, 226, 0.14), transparent 65%);
+            z-index: 0;
+            animation: bgFloat 16s ease-in-out infinite alternate;
+        }
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(260px 140px at 70% 80%, rgba(255, 255, 255, 0.06), transparent 70%),
+                radial-gradient(180px 100px at 20% 75%, rgba(245, 238, 226, 0.08), transparent 70%);
+            z-index: 0;
+        }
+        @keyframes bgFloat {
+            0% { transform: translateY(0px) scale(1); }
+            100% { transform: translateY(-8px) scale(1.02); }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 980px;
+            background: var(--surface-color);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 18px 34px -16px rgba(0, 0, 0, 0.8);
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+        .container::before {
+            content: "";
+            position: absolute;
+            top: -120px;
+            right: -110px;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(245, 238, 226, 0.12), transparent 70%);
+            pointer-events: none;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 0;
+            font-weight: 600;
+            font-size: 2rem;
+            background: linear-gradient(to right, #ffffff, #f5eee2);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        p {
+            color: var(--text-muted);
+            font-weight: 300;
+            margin: 0 0 12px;
+        }
+
+        .muted { color: var(--text-muted); }
+        .hidden { display: none !important; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 14px;
+            padding: 16px;
+            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+        }
+        .panel:hover {
+            transform: translateY(-3px);
+            border-color: rgba(245, 238, 226, 0.35);
+            box-shadow: 0 14px 30px -18px rgba(245, 238, 226, 0.55);
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .panel-header h3 { margin: 0; font-size: 1.1rem; }
+        .close-btn {
+            background: transparent;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            color: #e6dfd0;
+            border-radius: 8px;
+            padding: 4px 8px;
+            font-size: 12px;
+            margin: 0;
+        }
+
+        .panel h3 { margin: 0 0 10px; font-size: 1.1rem; }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 15px;
+            font-family: 'Outfit', sans-serif;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        textarea { min-height: 90px; resize: vertical; }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        button {
+            background: linear-gradient(135deg, #ffffff, #f5eee2);
+            color: #111111;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Outfit', sans-serif;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px var(--primary-glow);
+        }
+        button::after {
+            content: "";
+            position: absolute;
+            top: -120%;
+            left: -20%;
+            width: 35%;
+            height: 300%;
+            transform: rotate(20deg);
+            background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.45) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transition: left 0.45s ease;
+        }
+        button:hover::after { left: 120%; }
+        .glow-line {
+            height: 1px;
+            width: 100%;
+            background: linear-gradient(90deg, transparent, var(--accent-soft), transparent);
+            margin: 12px 0 18px;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            color: #ffffff;
+        }
+
+        .status {
+            margin: 8px 0 14px;
+            padding: 9px 12px;
+            border-radius: 9px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+        }
+
+        .ok { color: var(--ok); }
+        .warn { color: var(--warn); }
+
+        .cards-container {
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-left: 4px solid #ffffff;
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateX(2px);
+        }
+
+        .question { font-weight: 600; margin-bottom: 6px; color: #ffffff; }
+        .answer { color: var(--text-main); font-weight: 300; line-height: 1.4; }
+        .small { font-size: 0.9rem; }
+
+        .resource-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .resource-item a { color: #ffffff; text-decoration: none; }
+        .resource-item a:hover { text-decoration: underline; }
+        .resource-meta { color: var(--text-muted); font-size: 12px; }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.18);
+        }
+
+        .auth-rows {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .auth-box {
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        @media (max-width: 860px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Flashcard Hub</h1>
+        <p class="muted" style="text-align:center;">Login, generate cards, grow your streak, unlock a daily mystery quiz, and ask Gemini/ChatGPT instantly.</p>
+        <div class="glow-line"></div>
+
+        <div id="statusBox" class="status">Ready.</div>
+
+        <div id="authPanel" class="panel">
+            <div class="panel-header">
+                <h3>User Authentication</h3>
+                <button class="close-btn" onclick="hideSection('authPanel')">Close</button>
+            </div>
+            <div class="auth-rows">
+                <div class="auth-box">
+                    <p class="small">Signup</p>
+                    <input type="email" id="signupEmail" placeholder="Email" />
+                    <input type="password" id="signupPassword" placeholder="Password (min 6 chars)" />
+                    <input type="password" id="signupConfirmPassword" placeholder="Confirm Password" />
+                    <button onclick="signup()">Create Account</button>
+                </div>
+                <div class="auth-box">
+                    <p class="small">Login</p>
+                    <input type="email" id="loginEmail" placeholder="Email" />
+                    <input type="password" id="loginPassword" placeholder="Password" />
+                    <button onclick="login()">Login</button>
+                    <button class="btn-secondary" onclick="loginWithGoogle()">Continue with Google</button>
+                    <button class="btn-secondary" onclick="logout()">Logout</button>
+                </div>
+            </div>
+            <div id="sessionInfo" class="small muted"></div>
+        </div>
+
+        <div id="appPanel" class="hidden">
+            <div class="toolbar">
+                <div class="small">Mystery hook: <span class="ok">Daily Quiz Reward</span></div>
+                <div>
+                    <button class="btn-secondary" id="themeToggleBtn" onclick="toggleTheme()">Theme: Dark</button>
+                    <button onclick="openExternalAI('chatgpt')">Ask ChatGPT</button>
+                    <button onclick="openExternalAI('gemini')">Ask Gemini</button>
+                    <button class="btn-secondary" onclick="loadMe()">Refresh Profile</button>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>Generate Flashcards</h3>
+                        <button class="close-btn" onclick="hideSection(this.closest('.panel').id || 'genPanel', this)">Close</button>
+                    </div>
+                    <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off" />
+                    <button onclick="generateCards()">Generate</button>
+                    <div class="cards-container" id="cardsContainer"></div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>Test Streak</h3>
+                        <button class="close-btn" onclick="hideSection(this.closest('.panel').id || 'streakPanel', this)">Close</button>
+                    </div>
+                    <p class="small">Check in daily to maintain your streak.</p>
+                    <button onclick="checkInStreak()">Check In Today</button>
+                    <button class="btn-secondary" onclick="loadStreak()">Load Streak</button>
+                    <div id="streakBox" class="small"></div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>Smart Resource Locator</h3>
+                        <button class="close-btn" onclick="hideSection(this.closest('.panel').id || 'resourcePanel', this)">Close</button>
+                    </div>
+                    <p class="small">Tell what you want to learn and get best web/video results.</p>
+                    <input id="resourceQuery" type="text" placeholder="What do you want to know?" />
+                    <select id="resourcePlatform">
+                        <option value="youtube">YouTube (ranked by views)</option>
+                        <option value="google">Google/Web</option>
+                    </select>
+                    <button onclick="searchResources()">Search Best Results</button>
+                    <button class="btn-secondary" onclick="loadResources()">Auto Recommend From Flashcards</button>
+                    <div id="resourceBox" class="small"></div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>Daily Mystery Quiz</h3>
+                        <button class="close-btn" onclick="hideSection(this.closest('.panel').id || 'quizPanel', this)">Close</button>
+                    </div>
+                    <button onclick="loadMysteryQuiz()">Load Today's Quiz</button>
+                    <div id="quizQuestion" class="small" style="margin:10px 0;"></div>
+                    <textarea id="quizAnswer" placeholder="Type your answer"></textarea>
+                    <button onclick="submitMysteryQuiz()">Submit Quiz</button>
+                    <div id="quizResult" class="small"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            token: localStorage.getItem("auth_token") || "",
+            user: null,
+            quiz: null
+        };
+        const THEME_KEY = "theme_mode";
+
+        function setStatus(message, type = "info") {
+            const box = document.getElementById("statusBox");
+            box.textContent = message;
+            box.className = "status";
+            if (type === "ok") box.classList.add("ok");
+            if (type === "warn") box.classList.add("warn");
+        }
+
+        function getAuthHeaders() {
+            return {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${state.token}`
+            };
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute("data-theme", theme);
+            localStorage.setItem(THEME_KEY, theme);
+            const btn = document.getElementById("themeToggleBtn");
+            if (btn) {
+                btn.textContent = theme === "night" ? "Theme: Night" : "Theme: Dark";
+            }
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute("data-theme") || "dark";
+            applyTheme(current === "night" ? "dark" : "night");
+        }
+
+        function setLoggedInUI(isLoggedIn) {
+            document.getElementById("appPanel").classList.toggle("hidden", !isLoggedIn);
+            document.getElementById("authPanel").classList.toggle("hidden", true);
+            const txt = isLoggedIn && state.user
+                ? `Logged in as ${state.user.email}`
+                : "Not logged in";
+            document.getElementById("sessionInfo").textContent = txt;
+        }
+
+        async function api(path, options = {}) {
+            const resp = await fetch(path, options);
+            let data = {};
+            try { data = await resp.json(); } catch (e) {}
+            if (!resp.ok || data.status === "error") {
+                throw new Error(data.message || "Request failed");
+            }
+            return data;
+        }
+
+        function hideSection(sectionId, btnRef) {
+            if (btnRef && btnRef.closest(".panel")) {
+                btnRef.closest(".panel").classList.add("hidden");
+                return;
+            }
+            const el = document.getElementById(sectionId);
+            if (el) el.classList.add("hidden");
+        }
+
+        async function signup() {
+            try {
+                const email = document.getElementById("signupEmail").value.trim();
+                const password = document.getElementById("signupPassword").value.trim();
+                const confirmPassword = document.getElementById("signupConfirmPassword").value.trim();
+                if (password !== confirmPassword) {
+                    setStatus("Signup failed: password and confirm password must match.", "warn");
+                    return;
+                }
+                const data = await api("/auth/signup", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+                state.token = data.session.access_token || "";
+                state.user = { email: data.session.email, user_id: data.session.user_id };
+                localStorage.setItem("auth_token", state.token);
+                setLoggedInUI(true);
+                setStatus("Signup successful.", "ok");
+            } catch (e) {
+                setStatus(`Signup failed: ${e.message}`, "warn");
+            }
+        }
+
+        async function login() {
+            try {
+                const email = document.getElementById("loginEmail").value.trim();
+                const password = document.getElementById("loginPassword").value.trim();
+                const data = await api("/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+                state.token = data.session.access_token || "";
+                state.user = { email: data.session.email, user_id: data.session.user_id };
+                localStorage.setItem("auth_token", state.token);
+                setLoggedInUI(true);
+                setStatus("Login successful.", "ok");
+            } catch (e) {
+                setStatus(`Login failed: ${e.message}`, "warn");
+            }
+        }
+
+        async function loginWithGoogle() {
+            try {
+                const data = await api("/auth/google/start");
+                window.open(data.url, "googleAuthWindow", "width=520,height=700,menubar=no,toolbar=no,location=yes,resizable=yes,scrollbars=yes,status=no");
+                setStatus("Google auth window opened. Complete sign-in there.", "ok");
+            } catch (e) {
+                setStatus(`Google auth failed: ${e.message}`, "warn");
+            }
+        }
+
+        async function logout() {
+            try {
+                if (state.token) {
+                    await api("/auth/logout", { method: "POST", headers: getAuthHeaders() });
+                }
+            } catch (e) {}
+            state.token = "";
+            state.user = null;
+            localStorage.removeItem("auth_token");
+            setLoggedInUI(false);
+            setStatus("Logged out.");
+        }
+
+        async function loadMe() {
+            if (!state.token) {
+                window.location.href = "/login";
+                return;
+            }
+            try {
+                const data = await api("/auth/me", { headers: getAuthHeaders() });
+                state.user = data.user;
+                setLoggedInUI(true);
+                setStatus("Session active.", "ok");
+            } catch (e) {
+                state.token = "";
+                state.user = null;
+                localStorage.removeItem("auth_token");
+                window.location.href = "/login";
+            }
+        }
+
+        async function generateCards() {
+            const url = document.getElementById("youtubeUrl").value.trim();
+            const container = document.getElementById("cardsContainer");
+            if (!url) return setStatus("Please enter a YouTube URL.", "warn");
+            container.innerHTML = "";
+            setStatus("Generating flashcards...");
+            try {
+                const data = await api("/generate", {
+                    method: "POST",
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ url })
+                });
+                data.cards.forEach(card => {
+                    const cardDiv = document.createElement("div");
+                    cardDiv.className = "card";
+                    cardDiv.innerHTML = `
+                        <div class="question">Q: ${card.question}</div>
+                        <div class="answer">A: ${card.answer}</div>
+                    `;
+                    container.appendChild(cardDiv);
+                });
+                setStatus("Flashcards ready.", "ok");
+            } catch (e) {
+                setStatus(`Generate failed: ${e.message}`, "warn");
+            }
+        }
+
+        async function loadStreak() {
+            try {
+                const data = await api("/streak", { headers: getAuthHeaders() });
+                const s = data.streak;
+                document.getElementById("streakBox").innerHTML =
+                    `Current: <b>${s.current_streak}</b> | Best: <b>${s.best_streak}</b><br>Last active: ${s.last_active_date || "Never"}`;
+            } catch (e) {
+                setStatus(`Streak load failed: ${e.message}`, "warn");
+            }
+        }
+
+        async function checkInStreak() {
+            try {
+                await api("/streak", { method: "POST", headers: getAuthHeaders() });
+                setStatus("Streak checked in.", "ok");
+                await loadStreak();
+            } catch (e) {
+                setStatus(`Check-in failed: ${e.message}`, "warn");
+            }
+        }
+
+        async function loadResources() {
+            const box = document.getElementById("resourceBox");
+            box.innerHTML = "";
+            try {
+                const data = await api("/resources/recommend", { headers: getAuthHeaders() });
+                if (!data.resources.length) {
+                    box.textContent = "No resources yet. Generate flashcards first.";
+                    return;
+                }
+                data.resources.forEach(r => {
+                    const row = document.createElement("div");
+                    row.className = "resource-item small";
+                    row.innerHTML = `
+                        <span>${r.topic}</span>
+                        <a href="${r.url}" target="_blank" rel="noopener">${r.title}</a>
+                    `;
+                    box.appendChild(row);
+                });
+            } catch (e) {
+                setStatus(`Resource lookup failed: ${e.message}`, "warn");
+            }
+        }
+
+        async function searchResources() {
+            const query = document.getElementById("resourceQuery").value.trim();
+            const platform = document.getElementById("resourcePlatform").value;
+            const box = document.getElementById("resourceBox");
+            if (!query) {
+                setStatus("Please tell what you want to know.", "warn");
+                return;
+            }
+            box.innerHTML = "Searching...";
+            try {
+                const data = await api("/resources/search", {
+                    method: "POST",
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ query, platform })
+                });
+                if (!data.results.length) {
+                    box.textContent = "No results found.";
+                    return;
+                }
+                box.innerHTML = "";
+                data.results.forEach(r => {
+                    const row = document.createElement("div");
+                    row.className = "resource-item small";
+                    row.innerHTML = `
+                        <div>
+                            <a href="${r.url}" target="_blank" rel="noopener">${r.title}</a>
+                            <div class="resource-meta">${r.channel || "Source"} | Views: ${r.views || "N/A"} | Likes: ${r.likes || "N/A"}</div>
+                        </div>
+                    `;
+                    box.appendChild(row);
+                });
+                setStatus(`Found top ${data.results.length} ${platform} results for "${query}".`, "ok");
+            } catch (e) {
+                setStatus(`Search failed: ${e.message}`, "warn");
+                box.textContent = "";
+            }
+        }
+
+        async function loadMysteryQuiz() {
+            try {
+                const data = await api("/mystery-quiz", { headers: getAuthHeaders() });
+                state.quiz = data.quiz;
+                document.getElementById("quizQuestion").textContent = data.quiz.question;
+                document.getElementById("quizResult").textContent =
+                    data.quiz.completed ? `Completed. Reward: ${data.quiz.reward_points}` : "Not completed yet.";
+            } catch (e) {
+                setStatus(`Quiz load failed: ${e.message}`, "warn");
+            }
+        }
+
+        async function submitMysteryQuiz() {
+            try {
+                const answer = document.getElementById("quizAnswer").value.trim();
+                const data = await api("/mystery-quiz", {
+                    method: "POST",
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ answer })
+                });
+                document.getElementById("quizResult").textContent =
+                    `${data.message} Correct: ${data.is_correct ? "Yes" : "No"} | Reward: ${data.quiz.reward_points}`;
+                setStatus("Mystery quiz submitted.", "ok");
+            } catch (e) {
+                setStatus(`Quiz submit failed: ${e.message}`, "warn");
+            }
+        }
+
+        function openExternalAI(provider) {
+            const prompt = encodeURIComponent("Help me study this topic with concise explanations and quick quiz questions.");
+            const url = provider === "gemini"
+                ? `https://gemini.google.com/app`
+                : `https://chatgpt.com/?q=${prompt}`;
+            window.open(url, `${provider}Window`, "width=520,height=760,menubar=no,toolbar=no,location=yes,resizable=yes,scrollbars=yes,status=no");
+        }
+
+        applyTheme(localStorage.getItem(THEME_KEY) || "dark");
+        loadMe();
+    </script>
+</body>
+</html>

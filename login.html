@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Flashcard Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d0d0d;
+            --card: #171717;
+            --text: #ffffff;
+            --muted: #c8c8c8;
+            --primary: #f5eee2;
+            --primary2: #ffffff;
+            --border: #4a4a4a;
+            --cream-soft: #d9cdb7;
+        }
+        [data-theme="night"] {
+            --card: #121212;
+            --muted: #b6b6b6;
+            --primary: #f2f2f2;
+            --primary2: #ffffff;
+            --border: #3f3f3f;
+            --cream-soft: #d6d6d6;
+            --bg: #050505;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            color: var(--text);
+            padding: 16px;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(380px 220px at 20% 5%, rgba(245, 238, 226, 0.12), transparent 70%),
+                radial-gradient(300px 180px at 90% 85%, rgba(255, 255, 255, 0.08), transparent 70%);
+            animation: drift 14s ease-in-out infinite alternate;
+        }
+        @keyframes drift {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(-10px); }
+        }
+        .card {
+            width: 100%;
+            max-width: 520px;
+            background: var(--card);
+            border-radius: 16px;
+            padding: 32px;
+            border: 1px solid rgba(245, 238, 226, 0.2);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+        .card::after {
+            content: "";
+            position: absolute;
+            top: -90px;
+            right: -80px;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(245, 238, 226, 0.14), transparent 70%);
+            pointer-events: none;
+        }
+        h1 {
+            margin: 0;
+            text-align: center;
+            font-size: 42px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary2), var(--primary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        h2 {
+            text-align: center;
+            margin: 8px 0 4px;
+            font-size: 40px;
+            font-weight: 700;
+        }
+        .subtitle {
+            text-align: center;
+            color: var(--muted);
+            margin: 0 0 22px;
+            line-height: 1.4;
+        }
+        .tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .tab {
+            border: 1px solid var(--border);
+            background: #202020;
+            border-radius: 10px;
+            padding: 10px;
+            font-weight: 500;
+            cursor: pointer;
+            color: #f0f0f0;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .tab:hover {
+            transform: translateY(-1px);
+            border-color: rgba(245, 238, 226, 0.45);
+        }
+        .tab.active {
+            color: #111;
+            border-color: transparent;
+            background: linear-gradient(135deg, var(--primary2), var(--primary));
+        }
+        label {
+            display: block;
+            margin: 10px 0 6px;
+            color: #d8d8d8;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-family: inherit;
+            font-size: 15px;
+            outline: none;
+            color: #fff;
+            background: #101010;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(245, 238, 226, 0.2);
+        }
+        .row {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--muted);
+            font-size: 14px;
+        }
+        .link {
+            background: none;
+            border: none;
+            color: var(--cream-soft);
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+        }
+        .btn {
+            width: 100%;
+            border: none;
+            border-radius: 999px;
+            padding: 12px 14px;
+            margin-top: 14px;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn::after {
+            content: "";
+            position: absolute;
+            top: -120%;
+            left: -25%;
+            width: 30%;
+            height: 300%;
+            transform: rotate(20deg);
+            background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.45) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transition: left 0.5s ease;
+        }
+        .btn:hover::after { left: 120%; }
+        .btn-primary {
+            color: #111;
+            background: linear-gradient(135deg, var(--primary2), var(--primary));
+        }
+        .divider {
+            margin: 16px 0;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 10px;
+            align-items: center;
+            color: var(--muted);
+            font-size: 13px;
+        }
+        .divider::before, .divider::after {
+            content: "";
+            height: 1px;
+            background: var(--border);
+        }
+        .btn-google {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: #1f1f1f;
+            color: #fff;
+            padding: 11px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .status {
+            margin-top: 14px;
+            font-size: 14px;
+            color: #d8d8d8;
+            text-align: center;
+            min-height: 20px;
+        }
+        .hidden { display: none; }
+        .top-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="top-actions">
+            <button id="themeToggleBtn" class="btn-google" style="width:auto;padding:8px 12px;" onclick="toggleTheme()">Theme: Dark</button>
+        </div>
+        <h1>Flashcard</h1>
+        <h2>Welcome back</h2>
+        <p class="subtitle">Build your study flow with flashcards, streaks, resources, and AI support.</p>
+
+        <div class="tabs">
+            <button id="loginTab" class="tab active" onclick="setMode('login')">Log In</button>
+            <button id="signupTab" class="tab" onclick="setMode('signup')">Sign Up</button>
+        </div>
+
+        <label>Email</label>
+        <input id="email" type="email" placeholder="alex.jordan@gmail.com">
+
+        <label>Password</label>
+        <input id="password" type="password" placeholder="********">
+
+        <div id="confirmWrap" class="hidden">
+            <label>Confirm Password</label>
+            <input id="confirmPassword" type="password" placeholder="********">
+        </div>
+
+        <div class="row">
+            <button class="link" onclick="setStatus('Use Sign Up if you forgot old password.')">Forgot password?</button>
+            <span>Remember sign in details</span>
+        </div>
+
+        <button id="submitBtn" class="btn btn-primary" onclick="submitAuth()">Log in</button>
+
+        <div class="divider">OR</div>
+        <button class="btn-google" onclick="loginWithGoogle()">Continue with Google</button>
+
+        <div class="status" id="statusText"></div>
+    </div>
+
+    <script>
+        let mode = "login";
+        const THEME_KEY = "theme_mode";
+
+        function setStatus(msg) {
+            document.getElementById("statusText").textContent = msg || "";
+        }
+
+        function setMode(next) {
+            mode = next;
+            document.getElementById("loginTab").classList.toggle("active", next === "login");
+            document.getElementById("signupTab").classList.toggle("active", next === "signup");
+            document.getElementById("confirmWrap").classList.toggle("hidden", next !== "signup");
+            document.getElementById("submitBtn").textContent = next === "signup" ? "Create account" : "Log in";
+            setStatus("");
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute("data-theme", theme);
+            localStorage.setItem(THEME_KEY, theme);
+            const btn = document.getElementById("themeToggleBtn");
+            if (btn) {
+                btn.textContent = theme === "night" ? "Theme: Night" : "Theme: Dark";
+            }
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute("data-theme") || "dark";
+            applyTheme(current === "night" ? "dark" : "night");
+        }
+
+        async function api(path, body) {
+            const resp = await fetch(path, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            });
+            const data = await resp.json();
+            if (!resp.ok || data.status === "error") {
+                throw new Error(data.message || "Request failed");
+            }
+            return data;
+        }
+
+        async function submitAuth() {
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value.trim();
+            const confirmPassword = document.getElementById("confirmPassword").value.trim();
+
+            if (!email || !password) {
+                setStatus("Please enter email and password.");
+                return;
+            }
+
+            if (mode === "signup" && password !== confirmPassword) {
+                setStatus("Password and confirm password must match.");
+                return;
+            }
+
+            try {
+                const path = mode === "signup" ? "/auth/signup" : "/auth/login";
+                const data = await api(path, { email, password });
+                const token = data.session?.access_token || "";
+                if (!token) {
+                    setStatus("Login succeeded but token is missing.");
+                    return;
+                }
+                localStorage.setItem("auth_token", token);
+                window.location.href = "/dashboard";
+            } catch (err) {
+                setStatus(err.message);
+            }
+        }
+
+        async function loginWithGoogle() {
+            try {
+                const resp = await fetch("/auth/google/start");
+                const data = await resp.json();
+                if (!resp.ok || data.status === "error") {
+                    throw new Error(data.message || "Google auth failed");
+                }
+                window.open(
+                    data.url,
+                    "googleAuthWindow",
+                    "width=520,height=700,menubar=no,toolbar=no,location=yes,resizable=yes,scrollbars=yes,status=no"
+                );
+                setStatus("Google window opened. Complete sign-in and wait for auto-login.");
+            } catch (err) {
+                setStatus(err.message);
+            }
+        }
+
+        window.addEventListener("message", (event) => {
+            if (event.origin !== window.location.origin) return;
+            const data = event.data || {};
+            if (data.type === "google_auth_success" && data.token) {
+                localStorage.setItem("auth_token", data.token);
+                setStatus("Google login successful.");
+                window.location.href = "/dashboard";
+            }
+        });
+
+        applyTheme(localStorage.getItem(THEME_KEY) || "dark");
+    </script>
+</body>
+</html>
