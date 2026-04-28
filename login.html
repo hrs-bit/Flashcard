@@ -276,6 +276,7 @@
     <script>
         let mode = "login";
         const THEME_KEY = "theme_mode";
+        const LAST_EMAIL_KEY = "last_google_email";
 
         function setStatus(msg) {
             document.getElementById("statusText").textContent = msg || "";
@@ -340,6 +341,9 @@
                     setStatus("Login succeeded but token is missing.");
                     return;
                 }
+                if (email.endsWith("@gmail.com")) {
+                    localStorage.setItem(LAST_EMAIL_KEY, email);
+                }
                 localStorage.setItem("auth_token", token);
                 window.location.href = "/dashboard";
             } catch (err) {
@@ -353,6 +357,10 @@
                 const data = await resp.json();
                 if (!resp.ok || data.status === "error") {
                     throw new Error(data.message || "Google auth failed");
+                }
+                const btn = document.querySelector(".btn-google");
+                if (btn) {
+                    btn.textContent = data.mode === "easy" ? "Continue with Google (Easy)" : "Continue with Google";
                 }
                 window.open(
                     data.url,
@@ -376,6 +384,19 @@
         });
 
         applyTheme(localStorage.getItem(THEME_KEY) || "dark");
+        (async function initGoogleLabel() {
+            try {
+                const resp = await fetch("/auth/google/start");
+                const data = await resp.json();
+                const btn = document.querySelector(".btn-google");
+                if (btn && data?.mode === "easy") {
+                    const saved = localStorage.getItem(LAST_EMAIL_KEY) || "";
+                    btn.textContent = saved.endsWith("@gmail.com")
+                        ? `Continue with Google as ${saved}`
+                        : "Continue with Google (Easy)";
+                }
+            } catch (e) {}
+        })();
     </script>
 </body>
 </html>

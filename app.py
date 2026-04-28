@@ -490,27 +490,34 @@ def login():
 
 @app.route("/auth/google/start")
 def auth_google_start():
-    # Real Google OAuth when credentials are configured.
-    if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
-        state = secrets.token_urlsafe(24)
-        MEM_GOOGLE_STATES[state] = int(time.time()) + 600
-        query = urlencode(
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        # Easy mode: no OAuth setup needed. User provides a Gmail in popup.
+        return jsonify(
             {
-                "client_id": GOOGLE_CLIENT_ID,
-                "redirect_uri": GOOGLE_REDIRECT_URL,
-                "response_type": "code",
-                "scope": "openid email profile",
-                "state": state,
-                "prompt": "select_account",
-                "access_type": "offline",
+                "status": "success",
+                "url": f"{request.url_root.rstrip('/')}/auth/google/easy",
+                "mode": "easy",
             }
         )
-        url = f"https://accounts.google.com/o/oauth2/v2/auth?{query}"
-        return jsonify({"status": "success", "url": url})
 
-    # Fallback path: local Google-like login if OAuth credentials are missing.
-    url = "http://127.0.0.1:5000/auth/google/fallback"
-    return jsonify({"status": "success", "url": url})
+    # Prefer deployed domain callback unless explicit env override is present.
+    redirect_url = GOOGLE_REDIRECT_URL or f"{request.url_root.rstrip('/')}/auth/google/callback"
+
+    state = secrets.token_urlsafe(24)
+    MEM_GOOGLE_STATES[state] = int(time.time()) + 600
+    query = urlencode(
+        {
+            "client_id": GOOGLE_CLIENT_ID,
+            "redirect_uri": redirect_url,
+            "response_type": "code",
+            "scope": "openid email profile",
+            "state": state,
+            "prompt": "select_account",
+            "access_type": "offline",
+        }
+    )
+    url = f"https://accounts.google.com/o/oauth2/v2/auth?{query}"
+    return jsonify({"status": "success", "url": url, "mode": "oauth"})
 
 
 @app.route("/auth/google/callback")
@@ -537,7 +544,7 @@ def auth_google_callback():
                 "code": code,
                 "client_id": GOOGLE_CLIENT_ID,
                 "client_secret": GOOGLE_CLIENT_SECRET,
-                "redirect_uri": GOOGLE_REDIRECT_URL,
+                "redirect_uri": GOOGLE_REDIRECT_URL or f"{request.url_root.rstrip('/')}/auth/google/callback",
                 "grant_type": "authorization_code",
             },
             timeout=20,
@@ -576,21 +583,38 @@ def auth_google_callback():
         )
 
 
-@app.route("/auth/google/fallback")
-def auth_google_fallback():
+@app.route("/auth/google/easy")
+def auth_google_easy_page():
     return """
     <html>
     <body style="font-family:Arial;padding:20px;background:#111;color:#fff;">
-      <h3>Google login fallback</h3>
-      <p>OAuth keys are not configured, so use your Gmail to continue.</p>
+      <h3>Easy Google Login</h3>
+      <p>OAuth is not configured. Enter your Gmail and continue.</p>
       <input id="email" placeholder="you@gmail.com" style="padding:10px;border-radius:8px;border:1px solid #666;width:100%;max-width:360px;" />
       <br/><br/>
+      <button id="quickBtn" onclick="quick()" style="display:none;padding:10px 14px;border-radius:8px;border:none;background:#fff;color:#111;cursor:pointer;margin-right:8px;">Continue as saved account</button>
       <button onclick="go()" style="padding:10px 14px;border-radius:8px;border:none;background:#f5eee2;color:#111;cursor:pointer;">Continue</button>
       <p id="msg"></p>
       <script>
+        const LAST_EMAIL_KEY = "last_google_email";
+        function init() {
+          const saved = localStorage.getItem(LAST_EMAIL_KEY) || "";
+          if (saved.endsWith("@gmail.com")) {
+            const quick = document.getElementById("quickBtn");
+            quick.style.display = "inline-block";
+            quick.textContent = "Continue as " + saved;
+            document.getElementById("email").value = saved;
+          }
+        }
+        async function quick() {
+          const saved = localStorage.getItem(LAST_EMAIL_KEY) || "";
+          if (!saved) return;
+          document.getElementById("email").value = saved;
+          await go();
+        }
         async function go() {
           const email = document.getElementById("email").value.trim();
-          const res = await fetch("/auth/google/fallback-login", {
+          const res = await fetch("/auth/google/easy-login", {
             method: "POST",
             headers: {"Content-Type":"application/json"},
             body: JSON.stringify({email})
@@ -600,26 +624,28 @@ def auth_google_fallback():
             document.getElementById("msg").textContent = data.message || "Failed";
             return;
           }
+          localStorage.setItem(LAST_EMAIL_KEY, email);
           window.opener && window.opener.postMessage({type:"google_auth_success", token:data.session.access_token}, window.location.origin);
           setTimeout(() => window.close(), 400);
         }
+        init();
       </script>
     </body>
     </html>
     """
 
 
-@app.route("/auth/google/fallback-login", methods=["POST"])
-def auth_google_fallback_login():
+@app.route("/auth/google/easy-login", methods=["POST"])
+def auth_google_easy_login():
     data = request.json or {}
     email = (data.get("email") or "").strip().lower()
     if not email or "@" not in email:
         return _error("Please provide a valid email.", 400)
     if not email.endswith("@gmail.com"):
-        return _error("Please use a Gmail address for Google login fallback.", 400)
+        return _error("Please use a Gmail address.", 400)
     session = _local_login_or_create(email)
     if not session:
-        return _error("Failed to create Google fallback session.", 500)
+        return _error("Failed to create Google session.", 500)
     return jsonify({"status": "success", "session": session})
 
 
