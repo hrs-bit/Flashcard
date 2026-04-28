@@ -95,9 +95,8 @@ py app.py
 
 App URLs:
 
-- Login: [http://127.0.0.1:5000/login](http://127.0.0.1:5000/login)
-- Dashboard: [http://127.0.0.1:5000/dashboard](http://127.0.0.1:5000/dashboard)
-- Health: [http://127.0.0.1:5000/health](http://127.0.0.1:5000/health)
+- Login: [http://127.0.0.1:5000/login](https://flashcard-he06.onrender.com)
+- Dashboard: [http://127.0.0.1:5000/dashboard](https://flashcard-he06.onrender.com/dashboard)
 
 ## API Highlights
 
